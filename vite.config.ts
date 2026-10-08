@@ -16,7 +16,7 @@ const managedLinux = readExecutionProfile() === "managed-linux";
 
 const localBindingConfig = {
   main: "./build/sites-worker.ts",
-  compatibility_date: "2026-10-08",
+  compatibility_date: "2026-05-15",
   observability: { enabled: true, traces: { enabled: true } },
   compatibility_flags: ["nodejs_compat"],
   d1_databases: d1
@@ -100,3 +100,4 @@ export default defineConfig(async ({ command }) => {
     ],
   };
 });
+

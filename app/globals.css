@@ -6,3 +6,19 @@
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 
 header{justify-content:flex-end}main{min-height:calc(100svh - 112px)}@media(max-width:700px){main{min-height:calc(100svh - 84px)}}
+/* The answer inflates into a tied latex balloon, then snaps into fragments. */
+.balloon-effect{position:fixed;z-index:100;pointer-events:none;width:180px;height:245px;transform:translate(-50%,-47%)}
+.balloon-whole{position:relative;width:100%;height:100%;transform-origin:50% 65%;animation:latex-balloon .95s both;filter:drop-shadow(0 8px 9px #74439520)}
+.balloon-drawing{display:block;width:100%;height:100%;overflow:visible}
+.balloon-answer{position:absolute;top:68px;left:30px;width:120px;text-align:center;line-height:1.25;color:#593775;font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.balloon-string{stroke-dasharray:150;stroke-dashoffset:0}
+.balloon-burst{position:absolute;left:50%;top:42%;width:0;height:0;animation:burst-visibility .95s both}
+.balloon-burst i{position:absolute;left:-5px;top:-6px;width:11px;height:17px;background:#b685d6;border-radius:60% 30% 50% 15%;transform:rotate(var(--angle)) translateY(0);animation:latex-fragment .36s .59s ease-out both}
+.balloon-burst i:nth-child(2n){background:#d5b4ed;width:7px;height:13px}.pop-ring{position:absolute;left:-35px;top:-35px;width:70px;height:70px;border:2px solid #c7a5df;border-radius:50%;animation:pop-ring .3s .59s ease-out both}
+@keyframes latex-balloon{0%{opacity:.5;transform:translateY(35px) scale(.28,.18)}20%{opacity:1;transform:translateY(4px) scale(.96,1.02)}35%{transform:translateY(-8px) rotate(-5deg) scale(1.02,.99)}57%{opacity:1;transform:translateY(-20px) rotate(3deg) scale(1.02)}61%{opacity:1;transform:translateY(-23px) rotate(1deg) scale(1.08,.98)}62%{opacity:0;transform:translateY(-23px) scale(1.12)}100%{opacity:0;transform:translateY(-23px) scale(1.12)}}
+@keyframes burst-visibility{0%,61%{visibility:hidden}62%,100%{visibility:visible}}
+@keyframes latex-fragment{0%{opacity:1;transform:rotate(var(--angle)) translateY(-20px) rotate(0deg)}100%{opacity:0;transform:rotate(var(--angle)) translateY(calc(-1 * var(--distance))) rotate(120deg) scale(.3)}}
+@keyframes pop-ring{0%{opacity:.5;transform:scale(.5)}100%{opacity:0;transform:scale(1.8)}}
+@media(prefers-reduced-motion:reduce){.balloon-whole{animation:none;opacity:1;transform:scale(.8)}.balloon-burst{display:none}}
+
+.balloon-burst{top:55px}
