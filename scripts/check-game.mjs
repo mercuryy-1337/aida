@@ -1,11 +1,57 @@
 import assert from 'node:assert/strict';
-import {isCorrect} from '../lib/game.ts';
-const origin='http://127.0.0.1:5173';
-async function post(path,body,cookie=''){return fetch(origin+path,{method:'POST',headers:{origin,'Content-Type':'application/json',cookie},body:JSON.stringify(body)});}
-for(const password of ['AIDA','MiSs S.S']){const r=await post('/api/unlock',{password});assert.equal(r.status,200,password);assert.match(r.headers.get('set-cookie'),/HttpOnly/);}
-assert.equal((await post('/api/unlock',{password:'incorrect'})).status,401);
-assert.equal((await fetch(origin+'/api/responses')).status,401);
-assert.equal((await post('/api/responses',{})).status,403);
-for(const [q,a] of [[0,' SUPERMAN '],[1,'Both'],[2,'Sakura'],[2,'cherry blossoms'],[2,'cherry blossom'],[3,'spider'],[3,'spiders'],[4,'24'],[5,'YES']])assert.ok(isCorrect(q,a));
-assert.equal(isCorrect(5,'no'),false);
-console.log('PASS: both case-insensitive passwords; wrong-password rejection; protected response access; answer aliases.');
+import { isCorrect } from '../lib/game.ts';
+
+process.loadEnvFile('.env.local');
+// This suite writes test records only to the local emulator, never production.
+const origin = 'http://127.0.0.1:5173';
+async function post(path, body, cookie = '') {
+  return fetch(origin + path, {
+    method: 'POST',
+    headers: { origin, 'Content-Type': 'application/json', cookie },
+    body: JSON.stringify(body),
+  });
+}
+let cookie;
+for (const password of ['AIDA', 'MiSs S.S']) {
+  const res = await post('/api/unlock', { password });
+  assert.equal(res.status, 200, password);
+  assert.match(res.headers.get('set-cookie'), /HttpOnly/);
+  cookie = res.headers.get('set-cookie').split(';')[0];
+}
+for (const password of ['incorrect', 'ida']) {
+  assert.equal((await post('/api/unlock', { password })).status, 401);
+}
+assert.equal((await fetch(origin + '/api/responses')).status, 401);
+assert.equal((await fetch(origin + '/api/responses', { headers: { Authorization: 'Bearer aida' } })).status, 401);
+assert.equal((await post('/api/responses', {})).status, 403);
+for (const [q, a] of [[0, ' SUPERMAN '], [1, 'Both'], [2, 'Sakura'], [2, 'cherry blossoms'], [2, 'cherry blossom'], [3, 'spider'], [3, 'spiders'], [4, '24'], [5, 'YES']]) {
+  assert.ok(isCorrect(q, a));
+}
+assert.equal(isCorrect(5, 'no'), false);
+const at = new Date().toISOString();
+const attempts = ['Superman', 'Both', 'Sakura', 'Spider', '24', 'Yes'].map((answer, question) => ({ question, answer, correct: false, at }));
+attempts.unshift({ question: 0, answer: 'Batman', correct: true, at });
+const record = { id: crypto.randomUUID(), startedAt: at, attempts, accepted: false, chases: 0 };
+assert.equal((await post('/api/responses', record, cookie)).status, 200);
+async function readRecord() {
+  const res = await fetch(origin + '/api/responses', { headers: { Authorization: `Bearer ${process.env.ADMIN_KEY}` } });
+  assert.equal(res.status, 200);
+  return (await res.json()).find(row => row.id === record.id);
+}
+let saved = await readRecord();
+assert.ok(saved, 'Completed game was persisted');
+assert.equal(saved.accepted, false);
+assert.equal(JSON.parse(saved.attempts).length, 7);
+assert.equal(JSON.parse(saved.attempts)[0].correct, false, 'Server recalculates correctness');
+assert.equal(JSON.parse(saved.attempts)[1].correct, true);
+const requests = await Promise.all([
+  post('/api/responses', { ...record, accepted: true, chases: 5 }, cookie),
+  post('/api/responses', record, cookie),
+]);
+for (const res of requests) assert.equal(res.status, 200);
+assert.equal((await post('/api/responses', record, cookie)).status, 200);
+saved = await readRecord();
+assert.equal(saved.accepted, true, 'Late completion must not undo acceptance');
+assert.equal(saved.chases, 5);
+assert.equal((await post('/api/responses', { ...record, attempts: [] }, cookie)).status, 400);
+console.log('PASS: passwords, retired ida password, protected dashboard, answer aliases, persistent attempts, server-side correctness, concurrent acceptance, late retries, and invalid-record rejection.');

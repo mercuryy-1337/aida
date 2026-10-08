@@ -1,21 +1,58 @@
 # Wonder Woman — Just for you
 
-A lilac mobile-friendly quiz for Aida, ending in a playful coffee-date invoice.
+A mobile-friendly lilac quiz for Aida, with balloon animations, a soft bubble pop, and a coffee-date invoice. This checkout is prepared for **Netlify** using standard Next.js and Netlify Blobs.
 
-- Six questions, three attempts per question, with balloon-pop animation and optional generated sound.
-- Both `aida` and `miss s.s` unlock the game (case-insensitive). Passwords are checked server-side; signed, HttpOnly cookies grant a 24-hour game session.
-- The decline button runs away five times with mouse proximity, touch, or keyboard input, then disappears.
-- Completed responses are saved in D1 before invoice acceptance; acceptance updates the same record idempotently.
-- `/admin` lists the latest 100 completed games, all answers and attempts, and acceptance status, with JSON export.
+## Deploy to Netlify
 
-## Configuration
+1. Push this project to your GitHub, GitLab, or Bitbucket repository.
+2. In Netlify, choose **Add new project → Import an existing project** and select that repository.
+3. Keep the settings from `netlify.toml`: build command **npm run build**, publish directory **.next**, Node **22**.
+4. Add these environment variables in Netlify for the production Functions runtime (or all scopes). Keep these out of source control:
 
-Production secrets are configured through Sites, never committed: `GAME_PASSWORDS` (JSON array of lowercase passwords), `SESSION_SECRET`, `ADMIN_KEY`. The dashboard key is distinct from the game passwords. `.env.local` is ignored and contains local-test values only.
+| Variable | Value |
+| --- | --- |
+| `GAME_PASSWORDS` | `["aida","miss s.s"]` |
+| `SESSION_SECRET` | A long random secret used to sign session cookies |
+| `ADMIN_KEY` | Your separate private dashboard key |
 
-## Development
+Generate a strong secret by running `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`. Run it separately for each secret, or use the previously provided dashboard key for `ADMIN_KEY` if you want to retain it.
 
-Use Node 22.13+ and the installed npm. `npm run dev` serves the development app. `npm run build` creates the production artifact. On Windows, when npm's system shim fails, call its JavaScript CLI directly or use the checkout-local shim under `.sites-runtime/bin`.
+5. Deploy. Netlify detects Next.js and configures its server-side adapter automatically. Netlify Blobs needs no manually provisioned database; the response store is created when the first game is saved.
+6. Share the site URL. Both game passwords are case-insensitive. Visit **/admin** and enter `ADMIN_KEY` to see answers, attempts, invoice acceptance, and JSON export.
 
-Generate schema migrations with `npm run db:generate`. Apply the generated SQL to the local D1 database only using the documented Sites starter workflow. Production migrations are applied by Sites publication.
+Use the repository/build deployment flow: dragging the old `dist` folder onto Netlify will not deploy the backend.
 
-`node scripts/check-game.mjs` checks answer aliases, password behavior, and unauthorized access against the running local preview at port 5173. `node node_modules/typescript/bin/tsc --noEmit` checks types. Test records remain in the local database; production starts empty.
+The existing Sites-hosted deployment remains separate. Its stored responses and environment variables are not copied into Netlify. A new Netlify site starts with an empty response store.
+
+## Local development
+
+Requires Node 22.13 or newer.
+
+```sh
+npm ci
+# Copy .env.example to .env.local and set your local test secrets.
+npm run dev
+```
+
+The app runs at **http://127.0.0.1:5173**. The dev launcher starts Netlify's official local Blobs emulator and stores test data in ignored `.netlify/local-blobs/`. Local records never go to the live site.
+
+```sh
+npm run build
+node scripts/dev.mjs --production
+# In another terminal:
+npm test
+```
+
+`npm test` tests passwords, protected response access, and answer aliases. The integration test additionally exercises persistence, invoice acceptance, and out-of-order retries using a test-only dashboard key.
+
+The `GAME_PASSWORDS`, `SESSION_SECRET`, and `ADMIN_KEY` values in ignored local files are development-only; Netlify must receive its own values through the environment settings.
+
+## Storage behavior
+
+Completed games and invoice acceptances use separate immutable keys in a site-wide Blobs store. Acceptance cannot be undone by a late completion request. Strong consistency makes new results available immediately to the dashboard. The dashboard returns the latest 100 completed games.
+
+The previous Cloudflare/Sites build scaffolding is retained for history, but the active `dev`, `build`, and `start` scripts and API routes now target Netlify/Next.js.
+
+References: [Next.js on Netlify](https://docs.netlify.com/build/frameworks/framework-setup-guides/nextjs/overview/) · [Netlify Blobs](https://docs.netlify.com/build/data-and-storage/netlify-blobs/).
+
+For phone testing, the dev server binds to **0.0.0.0:5173**. Open **http://YOUR-COMPUTER-LAN-IP:5173** on a phone connected to the same network.
