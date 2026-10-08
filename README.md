@@ -1,9 +1,9 @@
 # Wonder Woman — Just for you
 
-A lilac mobile-friendly quiz for Ida, ending in a playful coffee-date invoice.
+A lilac mobile-friendly quiz for Aida, ending in a playful coffee-date invoice.
 
 - Six questions, three attempts per question, with balloon-pop animation and optional generated sound.
-- Both `ida` and `miss s.s` unlock the game (case-insensitive). Passwords are checked server-side; signed, HttpOnly cookies grant a 24-hour game session.
+- Both `aida` and `miss s.s` unlock the game (case-insensitive). Passwords are checked server-side; signed, HttpOnly cookies grant a 24-hour game session.
 - The decline button runs away five times with mouse proximity, touch, or keyboard input, then disappears.
 - Completed responses are saved in D1 before invoice acceptance; acceptance updates the same record idempotently.
 - `/admin` lists the latest 100 completed games, all answers and attempts, and acceptance status, with JSON export.

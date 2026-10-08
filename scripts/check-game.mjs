@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {isCorrect} from '../lib/game.ts';
 const origin='http://127.0.0.1:5173';
 async function post(path,body,cookie=''){return fetch(origin+path,{method:'POST',headers:{origin,'Content-Type':'application/json',cookie},body:JSON.stringify(body)});}
-for(const password of ['IDA','MiSs S.S']){const r=await post('/api/unlock',{password});assert.equal(r.status,200,password);assert.match(r.headers.get('set-cookie'),/HttpOnly/);}
+for(const password of ['AIDA','MiSs S.S']){const r=await post('/api/unlock',{password});assert.equal(r.status,200,password);assert.match(r.headers.get('set-cookie'),/HttpOnly/);}
 assert.equal((await post('/api/unlock',{password:'incorrect'})).status,401);
 assert.equal((await fetch(origin+'/api/responses')).status,401);
 assert.equal((await post('/api/responses',{})).status,403);
