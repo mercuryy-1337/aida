@@ -1,4 +1,4 @@
-# Wonder Woman — a little something
+# Wonder Woman — Just for you
 
 A lilac mobile-friendly quiz for Ida, ending in a playful coffee-date invoice.
 
