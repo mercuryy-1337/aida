@@ -1,0 +1,34 @@
+import assert from 'node:assert/strict';
+import {registerHooks} from 'node:module';
+// Match the bundler's local TypeScript resolution for the standalone rule test.
+registerHooks({resolve(specifier,context,nextResolve){
+ if(context.parentURL?.endsWith('/lib/saved-game.ts')&&specifier.startsWith('./'))return nextResolve(specifier+'.ts',context);
+ return nextResolve(specifier,context);
+}});
+const {parseSavedGame,gameProgress}=await import('../lib/saved-game.ts');
+const {roundOrder}=await import('../lib/game.ts');
+const at='2026-10-10T12:00:00.000Z';
+const attempt=(question,answer)=>({question,answer,correct:false,at});
+const base={version:1,revision:'one',id:'11111111-1111-4111-8111-111111111111',startedAt:at,attempts:[],stage:'quiz',chases:0,paymentDate:''};
+const restore=changes=>parseSavedGame(JSON.stringify({...base,...changes}));
+assert.equal(gameProgress(restore({}).attempts).index,0);
+const wrong=attempt(0,'Batman');
+assert.equal(restore({attempts:[wrong]}).attempts.length,1);
+assert.equal(gameProgress([wrong,wrong]).index,0);
+assert.equal(gameProgress([wrong,wrong,wrong]).index,1,'Third wrong answer cannot be replayed after reload');
+assert.equal(gameProgress([attempt(0,'Superman')]).index,1,'Correct answer advances even if its animation was interrupted');
+const answers=['Superman','Something to share','Both','Iron Brew','Porsche','Sakura','Spider','24','Yes'];
+const all=answers.map((answer,i)=>attempt(roundOrder[i],answer));
+assert.equal(restore({attempts:all}).stage,'invoice');
+const bonus=[...all.slice(0,4),attempt(6,'911 GT3 RS')];
+assert.equal(restore({attempts:bonus}).stage,'invoice');
+const payment=restore({attempts:all,stage:'payment',chases:10,paymentDate:'2026-11-15'});
+assert.equal(payment.chases,10);
+assert.equal(payment.paymentDate,'2026-11-15');
+assert.equal(restore({...payment,stage:'done'}).stage,'done','Completed games stay completed');
+assert.throws(()=>restore({...payment,stage:'done',paymentDate:''}));
+assert.throws(()=>restore({stage:'done'}));
+assert.throws(()=>restore({attempts:[...all,attempt(5,'Yes')]}));
+assert.throws(()=>parseSavedGame('{broken'));
+assert.equal(restore(payment).id,base.id,'Reloads retain the response ID');
+console.log('PASS: persistent attempts, round recovery, instant wins, payment date, chase limit, completion lock, and invalid cache rejection.');
