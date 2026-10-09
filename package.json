@@ -10,7 +10,8 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "node scripts/check-game.mjs"
+    "test": "node scripts/check-game.mjs",
+    "test:rules": "node scripts/check-rules.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

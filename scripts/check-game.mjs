@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { isCorrect } from '../lib/game.ts';
+import { isCorrect, roundOrder } from '../lib/game.ts';
 
 process.loadEnvFile('.env.local');
 // This suite writes test records only to the local emulator, never production.
@@ -29,7 +29,7 @@ for (const [q, a] of [[0, ' SUPERMAN '], [1, 'Both'], [2, 'Sakura'], [2, 'cherry
 }
 assert.equal(isCorrect(5, 'no'), false);
 const at = new Date().toISOString();
-const attempts = ['Superman', 'Both', 'Sakura', 'Spider', '24', 'Yes'].map((answer, question) => ({ question, answer, correct: false, at }));
+const attempts = ['Superman', 'I collect unusual postcards.', 'Both', 'Porsche', 'Sakura', 'Spider', '24', 'Yes'].map((answer, round) => ({ question: roundOrder[round], answer, correct: false, at }));
 attempts.unshift({ question: 0, answer: 'Batman', correct: true, at });
 const record = { id: crypto.randomUUID(), startedAt: at, attempts, accepted: false, chases: 0 };
 assert.equal((await post('/api/responses', record, cookie)).status, 200);
@@ -41,17 +41,19 @@ async function readRecord() {
 let saved = await readRecord();
 assert.ok(saved, 'Completed game was persisted');
 assert.equal(saved.accepted, false);
-assert.equal(JSON.parse(saved.attempts).length, 7);
+assert.equal(JSON.parse(saved.attempts).length, 9);
 assert.equal(JSON.parse(saved.attempts)[0].correct, false, 'Server recalculates correctness');
 assert.equal(JSON.parse(saved.attempts)[1].correct, true);
+assert.equal(JSON.parse(saved.attempts)[2].correct, null);
+assert.equal(JSON.parse(saved.attempts)[2].answer, 'I collect unusual postcards.');
 const requests = await Promise.all([
-  post('/api/responses', { ...record, accepted: true, chases: 5 }, cookie),
+  post('/api/responses', { ...record, accepted: true, chases: 10 }, cookie),
   post('/api/responses', record, cookie),
 ]);
 for (const res of requests) assert.equal(res.status, 200);
 assert.equal((await post('/api/responses', record, cookie)).status, 200);
 saved = await readRecord();
 assert.equal(saved.accepted, true, 'Late completion must not undo acceptance');
-assert.equal(saved.chases, 5);
+assert.equal(saved.chases, 10);
 assert.equal((await post('/api/responses', { ...record, attempts: [] }, cookie)).status, 400);
 console.log('PASS: passwords, retired ida password, protected dashboard, answer aliases, persistent attempts, server-side correctness, concurrent acceptance, late retries, and invalid-record rejection.');
