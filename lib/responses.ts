@@ -7,9 +7,10 @@ export type GameResponse = {
   attempts: string;
   accepted: boolean;
   chases: number;
+  paymentDate?: string | null;
 };
 
-type Acceptance = { chases: number };
+type Acceptance = { chases: number; paymentDate?: string | null };
 
 function responseStore() {
   // The local SDK server uses the same storage protocol as hosted Netlify Blobs.
@@ -29,31 +30,46 @@ function responseStore() {
 
 export async function saveResponse(row: GameResponse) {
   const store = responseStore();
-  await store.setJSON(`game-${row.id}`, { ...row, accepted: false, chases: 0 }, { onlyIfNew: true });
+  if(await store.getMetadata(`deleted-${row.id}`))throw Error('deleted');
+  await store.setJSON(`game-${row.id}`, { ...row, accepted: false, chases: 0, paymentDate: null }, { onlyIfNew: true });
   // Separate immutable acceptance records prevent a delayed quiz save from
   // overwriting an acceptance, including concurrent retries across functions.
   if (row.accepted) {
-    await store.setJSON(`accepted-${row.id}`, { chases: row.chases }, { onlyIfNew: true });
+    await store.setJSON(`accepted-${row.id}`, { chases: row.chases, paymentDate: row.paymentDate }, { onlyIfNew: true });
   }
+  // A concurrent deletion must also win over an in-flight save.
+  if(await store.getMetadata(`deleted-${row.id}`)){
+    await Promise.all([store.delete(`game-${row.id}`),store.delete(`accepted-${row.id}`)]);
+    throw Error('deleted');
+  }
+}
+
+export async function deleteResponse(id:string){
+ const store=responseStore();
+ // Keep only an ID marker so late client retries cannot restore deleted answers.
+ await store.setJSON(`deleted-${id}`,true);
+ await Promise.all([store.delete(`game-${id}`),store.delete(`accepted-${id}`)]);
 }
 
 export async function listResponses(): Promise<GameResponse[]> {
   const store = responseStore();
-  const [{ blobs }, acceptances] = await Promise.all([
+  const [{ blobs }, acceptances, deletions] = await Promise.all([
     store.list({ prefix: 'game-' }),
     store.list({ prefix: 'accepted-' }),
+    store.list({ prefix: 'deleted-' }),
   ]);
+  const deletedKeys=new Set(deletions.blobs.map(({key})=>key));
   const acceptedKeys = new Set(acceptances.blobs.map(({ key }) => key));
   const records: GameResponse[] = [];
   // Limit concurrency when retrieving records, then return the latest 100.
   for (let i = 0; i < blobs.length; i += 20) {
     const batch = await Promise.all(blobs.slice(i, i + 20).map(async ({ key }) => {
       const row = await store.get(key, { type: 'json' }) as GameResponse | null;
-      if (!row) return null;
+      if (!row||deletedKeys.has(`deleted-${row.id}`)) return null;
       const acceptance = acceptedKeys.has(`accepted-${row.id}`)
         ? await store.get(`accepted-${row.id}`, { type: 'json' }) as Acceptance | null
         : null;
-      return { ...row, accepted: Boolean(acceptance), chases: acceptance?.chases ?? 0 };
+      return { ...row, accepted: Boolean(acceptance), chases: acceptance?.chases ?? 0, paymentDate: acceptance?.paymentDate ?? null };
     }));
     for (const row of batch) if (row) records.push(row);
   }

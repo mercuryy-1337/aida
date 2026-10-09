@@ -32,3 +32,5 @@ h1{font-weight:700;font-size:clamp(58px,6.2vw,84px);letter-spacing:-4px;line-hei
 .invoice-payment-note{margin:0 0 22px;font-size:12px;line-height:1.7;color:var(--purple)}
 
 textarea{width:100%;resize:vertical;min-height:140px;border:1px solid #e0d4e9;background:#fbf8fd;border-radius:9px;padding:18px;color:var(--ink);font:inherit;font-size:16px;line-height:1.6;outline:none}textarea:focus{border-color:#aa80c4;box-shadow:0 0 0 3px #decbea55}textarea::placeholder{color:#ad9ab9;font-size:13px}.admin td{white-space:pre-wrap;overflow-wrap:anywhere}
+
+.payment-form{margin:8px 0 18px}.payment-form label{font-size:13px;font-weight:600}.payment-form input{min-width:0;min-height:56px}.payment-confirmed{text-align:center;font-size:13px}.response-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:16px 0;font-size:13px}.response-actions button{padding:10px 15px;border:1px solid #d8c8e5;border-radius:8px;background:#f9f6fc;color:var(--ink)}.response-actions .delete-response{border-color:#d9abb7;color:#98384f;background:#fff5f7}

@@ -7,15 +7,16 @@ export const questions = [
  {title:'Are we going to Cape Town?',chapter:'THE NEXT ADVENTURE',options:['Yes','No'],reveal:'yes'},
  {title:'My dream car brand?',chapter:'THE DREAM GARAGE',placeholder:'Your answer',reveal:'Porsche'},
  {title:"One random thing that you'd like me to know",chapter:'QUICK BREAK',placeholder:'Share something…',reveal:''},
+ {title:'What’s my favourite drink?',chapter:'THE DRINK QUESTION',placeholder:'Your answer',reveal:'Iron Brew'},
 ];
 export type Attempt={question:number;answer:string;correct:boolean|null;at:string};
 // Keep question IDs stable so previously saved responses retain their labels.
-export const roundOrder = [0, 7, 1, 6, 2, 3, 4, 5];
+export const roundOrder = [0, 7, 1, 8, 6, 2, 3, 4, 5];
 export function isSharingQuestion(q:number){return q===7;}
 export const quizRoundCount=questions.length-1;
 function normalize(answer:string){return answer.toLowerCase().trim().replace(/[.!?]+$/g,'').replace(/\s+/g,' ');}
 export function isInstantWin(q:number,answer:string){return q===6&&/^(?:porsche )?911\s*gt3\s*rs$/.test(normalize(answer));}
-export function isCorrect(q:number,a:string){return isInstantWin(q,a)||([['superman'],['both'],['sakura','cherry blossom','cherry blossoms','sakura / cherry blossoms'],['spider','spiders'],['24'],['yes'],['porsche']][q]?.includes(normalize(a))??false);}
+export function isCorrect(q:number,a:string){return isInstantWin(q,a)||([['superman'],['both'],['sakura','cherry blossom','cherry blossoms','sakura / cherry blossoms'],['spider','spiders'],['24'],['yes'],['porsche'],[],['iron brew']][q]?.includes(normalize(a))??false);}
 export function validateAttempts(input:unknown):Attempt[]{
  if(!Array.isArray(input)||input.length===0||input.length>questions.length*3)throw Error('invalid');
  let round=0,count=0,won=false;
